@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>적정기술학회 QR코드 생성기</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+  />
+  <style>
+    :root {
+      --mint: #10b981;
+      --mint-dark: #059669;
+      --mint-soft: #d1fae5;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #1e293b;
+      --text-sub: #64748b;
+      --text-faint: #94a3b8;
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Pretendard', -apple-system, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 20px 64px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      text-align: center;
+      padding: 8px 0 0;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--mint-soft);
+      color: var(--mint-dark);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      margin-top: 8px;
+      color: var(--text-sub);
+      font-size: 14px;
+    }
+
+    /* ---- Input card ---- */
+    .card {
+      background: var(--surface);
+      border-radius: 24px;
+      padding: 28px 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .field-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type='text'] {
+      flex: 1;
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--bg);
+      border: none;
+      border-radius: 14px;
+      padding: 14px 16px;
+      outline: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 0 2px transparent;
+    }
+    input[type='text']::placeholder { color: var(--text-faint); }
+    input[type='text']:focus {
+      background: #fff;
+      box-shadow: 0 0 0 2px var(--mint);
+    }
+
+    button.primary {
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--mint);
+      border: none;
+      border-radius: 14px;
+      padding: 14px 22px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    button.primary:hover {
+      background: var(--mint-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    button.primary:active { transform: scale(0.95); }
+
+    .error-msg {
+      margin-top: 12px;
+      color: #ef4444;
+      font-size: 13px;
+      font-weight: 500;
+      display: none;
+    }
+
+    /* ---- Result card ---- */
+    .result-card {
+      background: var(--surface);
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: var(--shadow-md);
+      text-align: center;
+    }
+
+    .qr-frame {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      background: #fff;
+      padding: 28px 28px 22px;
+      border-radius: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .qr-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    #qr-canvas {
+      width: 240px;
+      height: 240px;
+      image-rendering: pixelated;
+      border-radius: 8px;
+    }
+    .qr-url {
+      max-width: 240px;
+      font-size: 13px;
+      color: var(--text-sub);
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    .actions {
+      margin-top: 24px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    button.ghost {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--mint-dark);
+      background: var(--mint-soft);
+      border: none;
+      border-radius: 12px;
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    button.ghost:hover { transform: translateY(-2px); background: #b9f0dc; }
+    button.ghost:active { transform: scale(0.95); }
+
+    /* ---- Empty state ---- */
+    .empty {
+      text-align: center;
+      padding: 40px 24px;
+      color: var(--text-sub);
+    }
+    .empty svg { margin-bottom: 16px; }
+    .empty h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .empty p { font-size: 14px; color: var(--text-faint); }
+
+    /* ---- Skeleton ---- */
+    .skeleton {
+      text-align: center;
+      padding: 32px 24px;
+    }
+    .sk-box {
+      width: 240px;
+      height: 240px;
+      border-radius: 16px;
+      margin: 0 auto 18px;
+      background: linear-gradient(90deg, #eef2f7 25%, #e2e8f0 37%, #eef2f7 63%);
+      background-size: 400% 100%;
+      animation: shimmer 1.4s ease infinite;
+    }
+    .sk-line {
+      height: 12px;
+      border-radius: 6px;
+      margin: 0 auto 10px;
+      background: linear-gradient(90deg, #eef2f7 25%, #e2e8f0 37%, #eef2f7 63%);
+      background-size: 400% 100%;
+      animation: shimmer 1.4s ease infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+
+    .hidden { display: none; }
+
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <span class="badge">🌱 적정기술학회</span>
+      <h1>QR코드 생성기</h1>
+      <p>인터넷 주소를 입력하면 QR코드를 만들어 드려요.</p>
+    </header>
+
+    <section class="card">
+      <label class="field-label" for="url-input">인터넷 주소</label>
+      <div class="input-row">
+        <input
+          type="text"
+          id="url-input"
+          placeholder="예: https://www.example.org"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="primary" id="generate-btn">만들기</button>
+      </div>
+      <div class="error-msg" id="error-msg"></div>
+    </section>
+
+    <!-- Empty state -->
+    <section class="card" id="empty-state">
+      <div class="empty">
+        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+          <line x1="14" y1="14" x2="14" y2="14.01"></line>
+          <line x1="21" y1="14" x2="21" y2="14.01"></line>
+          <line x1="14" y1="21" x2="14" y2="21.01"></line>
+          <line x1="21" y1="21" x2="21" y2="21.01"></line>
+          <line x1="17.5" y1="17.5" x2="17.5" y2="17.51"></line>
+        </svg>
+        <h3>아직 만든 QR코드가 없어요</h3>
+        <p>위에 인터넷 주소를 넣고 만들기를 눌러 보세요!</p>
+      </div>
+    </section>
+
+    <!-- Skeleton -->
+    <section class="card skeleton hidden" id="skeleton">
+      <div class="sk-box"></div>
+      <div class="sk-line" style="width: 60%"></div>
+      <div class="sk-line" style="width: 80%"></div>
+    </section>
+
+    <!-- Result -->
+    <section class="result-card hidden" id="result">
+      <div class="qr-frame">
+        <div class="qr-title">적정기술학회</div>
+        <canvas id="qr-canvas" width="240" height="240"></canvas>
+        <div class="qr-url" id="qr-url"></div>
+      </div>
+      <div class="actions">
+        <button class="ghost" id="download-btn">이미지 저장</button>
+        <button class="ghost" id="copy-btn">주소 복사</button>
+      </div>
+    </section>
+
+    <p class="footer">적정기술학회 · Appropriate Technology Society</p>
+  </main>
+
+  <script src="qrcode.js"></script>
+  <script>
+    (function () {
+      var input = document.getElementById('url-input');
+      var genBtn = document.getElementById('generate-btn');
+      var errorMsg = document.getElementById('error-msg');
+      var emptyState = document.getElementById('empty-state');
+      var skeleton = document.getElementById('skeleton');
+      var result = document.getElementById('result');
+      var canvas = document.getElementById('qr-canvas');
+      var qrUrlEl = document.getElementById('qr-url');
+      var downloadBtn = document.getElementById('download-btn');
+      var copyBtn = document.getElementById('copy-btn');
+
+      var currentUrl = '';
+
+      function normalizeUrl(raw) {
+        var v = raw.trim();
+        if (!v) return '';
+        if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+        return v;
+      }
+
+      function isValidUrl(v) {
+        try {
+          var u = new URL(v);
+          return !!u.hostname && u.hostname.indexOf('.') !== -1;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.display = 'block';
+      }
+      function clearError() {
+        errorMsg.style.display = 'none';
+      }
+
+      function showView(view) {
+        emptyState.classList.add('hidden');
+        skeleton.classList.add('hidden');
+        result.classList.add('hidden');
+        if (view === 'empty') emptyState.classList.remove('hidden');
+        if (view === 'skeleton') skeleton.classList.remove('hidden');
+        if (view === 'result') result.classList.remove('hidden');
+      }
+
+      function renderMatrix(matrix, url) {
+        var size = matrix.length;
+        var quiet = 4; // quiet zone modules
+        var total = size + quiet * 2;
+        var scale = Math.max(2, Math.floor(480 / total));
+        var px = total * scale;
+
+        canvas.width = px;
+        canvas.height = px;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, px, px);
+        ctx.fillStyle = '#0f172a';
+        for (var r = 0; r < size; r++) {
+          for (var c = 0; c < size; c++) {
+            if (matrix[r][c]) {
+              ctx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+            }
+          }
+        }
+        qrUrlEl.textContent = url;
+      }
+
+      function generate() {
+        clearError();
+        var normalized = normalizeUrl(input.value);
+        if (!normalized) {
+          showError('인터넷 주소를 입력해 주세요.');
+          return;
+        }
+        if (!isValidUrl(normalized)) {
+          showError('올바른 인터넷 주소 형식이 아니에요. 예: https://example.org');
+          return;
+        }
+
+        currentUrl = normalized;
+        showView('skeleton');
+
+        // brief delay so the skeleton is perceivable and UI stays responsive
+        setTimeout(function () {
+          try {
+            var matrix = window.QRCodeLib.generate(normalized, 'M');
+            renderMatrix(matrix, normalized);
+            showView('result');
+          } catch (e) {
+            showView('empty');
+            showError(e.message || 'QR코드를 만드는 중 문제가 발생했어요.');
+          }
+        }, 450);
+      }
+
+      genBtn.addEventListener('click', generate);
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') generate();
+      });
+      input.addEventListener('input', clearError);
+
+      downloadBtn.addEventListener('click', function () {
+        if (!currentUrl) return;
+        var link = document.createElement('a');
+        link.download = '적정기술학회_QR.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+
+      copyBtn.addEventListener('click', function () {
+        if (!currentUrl) return;
+        var done = function () {
+          var prev = copyBtn.textContent;
+          copyBtn.textContent = '복사 완료!';
+          setTimeout(function () { copyBtn.textContent = prev; }, 1400);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(currentUrl).then(done, done);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = currentUrl;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          done();
+        }
+      });
+
+      showView('empty');
+      input.focus();
+    })();
+  </script>
+</body>
+</html>
